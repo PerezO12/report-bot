@@ -71,6 +71,9 @@ def main() -> None:
     bot_token = _require_env("BOT_TOKEN")
     admin_chat_id = int(_require_env("ADMIN_CHAT_ID"))
 
+    use_proxy = os.getenv("USE_PROXY", "false").strip().lower() == "true"
+    proxy_url = os.getenv("PROXY_URL", "http://proxy.server:3128").strip()
+
     flows = load_all_flows("flows")
     logger.info("Loaded %d flow(s): %s", len(flows), [f.flow_id for f in flows])
 
@@ -85,7 +88,12 @@ def main() -> None:
             reply_markup=menu_keyboard,
         )
 
-    app = ApplicationBuilder().token(bot_token).build()
+    builder = ApplicationBuilder().token(bot_token)
+    if use_proxy:
+        builder = builder.proxy(proxy_url).get_updates_proxy(proxy_url)
+        logger.info("Proxy enabled: %s", proxy_url)
+
+    app = builder.build()
     app.add_error_handler(global_error_handler)
 
     # /start menu — registered before ConversationHandlers so it's always reachable
