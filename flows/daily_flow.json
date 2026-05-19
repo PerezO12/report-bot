@@ -1,0 +1,123 @@
+{
+  "flow_id": "daily",
+  "command": "/daily",
+  "title": "Daily Standup",
+  "steps": [
+    {
+      "id": "step_date",
+      "question": "📅 Por favor ingresa la fecha del reporte.\n*Formato:* DD/MM/YYYY\n*Ej:* 19/05/2026",
+      "validation": {
+        "type": "date",
+        "date_format": "DD/MM/YYYY"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_yesterday_hours"
+    },
+    {
+      "id": "step_yesterday_hours",
+      "question": "🕐 ¿Cuántas horas trabajaste ayer?\n*Ej:* 7.5 ó 8",
+      "validation": {
+        "type": "number",
+        "min": 0,
+        "max": 24
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_yesterday_desc"
+    },
+    {
+      "id": "step_yesterday_desc",
+      "question": "📝 Describe en qué trabajaste ayer:\n*Ej:* Implementé el módulo de autenticación y corregí 3 bugs del sprint.",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_today"
+    },
+    {
+      "id": "step_today",
+      "question": "📋 ¿En qué planeas trabajar hoy?\n*Ej:* Revisión de PRs pendientes y reunión con el equipo de QA.",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_blocker"
+    },
+    {
+      "id": "step_blocker",
+      "question": "🚧 ¿Tienes algún bloqueo que te impida avanzar?",
+      "validation": {
+        "type": "boolean",
+        "choices": ["Sí", "No"]
+      },
+      "optional": false,
+      "keyboard": {
+        "enabled": true,
+        "layout": "row",
+        "buttons": [
+          {"label": "✅ Sí", "value": "yes"},
+          {"label": "❌ No", "value": "no"}
+        ]
+      },
+      "next_step": {
+        "type": "conditional",
+        "on": "step_blocker",
+        "cases": {
+          "yes": "step_blocker_desc",
+          "no": null
+        },
+        "default": null
+      }
+    },
+    {
+      "id": "step_blocker_desc",
+      "question": "📌 Describe el bloqueo que tienes:\n*Ej:* No tengo acceso al ambiente de staging desde ayer.",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_needs_meeting"
+    },
+    {
+      "id": "step_needs_meeting",
+      "question": "🤝 ¿Necesitas una reunión para resolver el bloqueo?",
+      "validation": {
+        "type": "boolean",
+        "choices": ["Sí", "No"]
+      },
+      "optional": false,
+      "keyboard": {
+        "enabled": true,
+        "layout": "row",
+        "buttons": [
+          {"label": "✅ Sí", "value": "yes"},
+          {"label": "❌ No", "value": "no"}
+        ]
+      },
+      "next_step": {
+        "type": "conditional",
+        "on": "step_needs_meeting",
+        "cases": {
+          "yes": "step_meeting_time",
+          "no": null
+        },
+        "default": null
+      }
+    },
+    {
+      "id": "step_meeting_time",
+      "question": "📅 ¿Cuándo y a qué hora propones la reunión?\n*Ej:* Mañana a las 10:00 AM",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": null
+    }
+  ],
+  "summary_template": "daily"
+}

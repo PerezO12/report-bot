@@ -1,0 +1,58 @@
+{
+  "flow_id": "incidencia",
+  "command": "/incidencia",
+  "title": "Reporte de Incidencia",
+  "steps": [
+    {
+      "id": "step_region",
+      "question": "🌍 ¿Cuál es la región afectada?\n*Ej:* Occidente, Oriente, Centro, Sur",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_business"
+    },
+    {
+      "id": "step_business",
+      "question": "🏪 ¿Cuál es el nombre del negocio?\n*Ej:* Supermercado El Sol",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_module"
+    },
+    {
+      "id": "step_module",
+      "question": "🔧 ¿Cuál es el módulo que está presentando el problema?\n*Ej:* Facturación, Inventario, Reportes, Caja",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_description"
+    },
+    {
+      "id": "step_description",
+      "question": "📝 Describe el problema de forma detallada:\n*Ej:* Al intentar guardar una factura con más de 50 líneas de detalle, el sistema muestra el error 'Límite excedido' y no permite continuar.",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_evidence"
+    },
+    {
+      "id": "step_evidence",
+      "question": "📷 Adjunta una foto como evidencia del problema.\n_Si no tienes evidencia disponible, envía_ /skip _para continuar sin foto._",
+      "validation": {
+        "type": "photo"
+      },
+      "optional": true,
+      "keyboard": null,
+      "next_step": null
+    }
+  ],
+  "summary_template": "incidencia"
+}
