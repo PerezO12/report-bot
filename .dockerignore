@@ -1,0 +1,15 @@
+.env
+.env.example
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.git/
+.gitignore
+README.md
+start.bat
+k8s/
+*.tar

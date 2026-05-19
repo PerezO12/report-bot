@@ -165,6 +165,159 @@ No es necesario modificar ningún archivo Python.
 - Al finalizar el flujo, el bot reenvía la foto directamente al `ADMIN_CHAT_ID`.
 - Si el paso de foto es opcional (`"optional": true`), el usuario puede enviar `/skip` para omitirlo.
 
+---
+
+## Despliegue en k3s (Kubernetes ligero)
+
+### Arquitectura del despliegue
+
+```
+Tu PC (Windows)                   Servidor (VM con k3s, sin Docker)
+──────────────────                ─────────────────────────────────
+docker build ...                  sudo k3s ctr images import botdaily.tar
+docker save → botdaily.tar   →    kubectl apply -f k8s/
+scp al servidor                   Pod corriendo ✓
+```
+
+> **¿Por qué solo 1 réplica?** El bot usa long-polling. Si corren 2 pods al mismo tiempo, ambos procesarían el mismo mensaje dos veces.
+
+---
+
+### Paso 1 — Preparar el servidor (una sola vez)
+
+Conéctate por SSH al servidor y ejecuta:
+
+```bash
+# Configurar kubectl sin sudo
+mkdir -p ~/.kube
+sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+sudo chown $(whoami):$(whoami) ~/.kube/config
+
+# Verificar que k3s está listo
+kubectl get nodes
+# NAME      STATUS   ROLES                  AGE
+# mi-vm     Ready    control-plane,master   5m
+
+# Crear carpeta del proyecto y el .env
+mkdir -p ~/BotDaily
+cp .env.example ~/BotDaily/.env   # o créalo manualmente
+nano ~/BotDaily/.env
+```
+
+Contenido del `.env` en el servidor:
+
+```env
+BOT_TOKEN=123456:ABCdefGHIjklMNOpqrSTUvwxYZ
+ADMIN_CHAT_ID=987654321
+USE_PROXY=false
+```
+
+---
+
+### Paso 2 — Construir y subir desde tu PC (Windows)
+
+Abre PowerShell en la carpeta del proyecto y ejecuta:
+
+```powershell
+# Reemplaza usuario@IP con los datos reales de tu servidor
+.\build.ps1 -Server usuario@192.168.1.50
+```
+
+El script hace:
+1. `docker build` — construye la imagen en tu PC
+2. `docker save` — la exporta a `botdaily.tar`
+3. `scp` — sube el tar y la carpeta `k8s/` al servidor
+4. Te muestra el comando exacto para terminar en el servidor
+
+---
+
+### Paso 3 — Desplegar en el servidor
+
+```bash
+ssh usuario@192.168.1.50
+cd ~/BotDaily
+chmod +x deploy.sh
+./deploy.sh
+```
+
+Salida esperada:
+
+```
+[INFO] Importando botdaily:latest en k3s containerd...
+[OK]   Imagen importada
+[OK]   Namespace 'botdaily' listo
+[OK]   Secret aplicado
+[OK]   ConfigMap aplicado
+[OK]   Deployment aplicado
+[OK]   Pod corriendo
+
+════════════════════════════════════════
+  BotDaily desplegado correctamente ✓
+════════════════════════════════════════
+```
+
+---
+
+### Actualizar después de cambios en el código
+
+```powershell
+# En tu PC — reconstruye y sube
+.\build.ps1 -Server usuario@192.168.1.50
+```
+
+```bash
+# En el servidor — reimporta y reinicia el pod
+cd ~/BotDaily && ./deploy.sh --update
+```
+
+---
+
+### Comandos útiles en el servidor
+
+```bash
+# Estado del pod
+kubectl get pods -n botdaily
+
+# Logs en tiempo real
+kubectl logs -f deployment/botdaily -n botdaily
+
+# Reiniciar sin cambios
+kubectl rollout restart deployment/botdaily -n botdaily
+
+# Actualizar solo config (sin nueva imagen)
+kubectl apply -f k8s/configmap.yaml
+kubectl rollout restart deployment/botdaily -n botdaily
+```
+
+---
+
+### Solución de problemas
+
+**Pod en CrashLoopBackOff:**
+```bash
+kubectl logs deployment/botdaily -n botdaily --previous
+# Causas comunes: BOT_TOKEN incorrecto, ADMIN_CHAT_ID mal puesto
+```
+
+**Imagen no encontrada (ErrImageNeverPull):**
+```bash
+sudo k3s ctr images list | grep botdaily
+# Si no aparece: sube el tar de nuevo y corre ./deploy.sh --update
+```
+
+**Ver todos los eventos:**
+```bash
+kubectl get events -n botdaily --sort-by='.lastTimestamp'
+```
+
+**Borrar todo y empezar de cero:**
+```bash
+kubectl delete namespace botdaily
+./deploy.sh   # primer despliegue limpio
+```
+
+---
+
 ## Licencia
 
 MIT

@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: botdaily
+  namespace: botdaily
+  labels:
+    app: botdaily
+spec:
+  # SIEMPRE 1 réplica — el bot usa polling y múltiples instancias
+  # procesarían el mismo mensaje dos veces.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: botdaily
+  strategy:
+    type: Recreate   # Evita que dos pods corran simultáneamente durante actualizaciones
+  template:
+    metadata:
+      labels:
+        app: botdaily
+    spec:
+      containers:
+        - name: botdaily
+          image: botdaily:latest
+          imagePullPolicy: Never   # Imagen cargada localmente en k3s (sin registry externo)
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          env:
+            - name: BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: botdaily-secret
+                  key: BOT_TOKEN
+            - name: ADMIN_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: botdaily-secret
+                  key: ADMIN_CHAT_ID
+            - name: USE_PROXY
+              valueFrom:
+                configMapKeyRef:
+                  name: botdaily-config
+                  key: USE_PROXY
+            - name: PROXY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: botdaily-config
+                  key: PROXY_URL
+          # Health check: verifica que el proceso Python sigue corriendo
+          livenessProbe:
+            exec:
+              command: ["python", "-c", "import os; os.path.exists('/app/main.py') or exit(1)"]
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            failureThreshold: 3
+      restartPolicy: Always
