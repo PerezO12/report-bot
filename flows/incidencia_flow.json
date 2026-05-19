@@ -5,7 +5,7 @@
   "steps": [
     {
       "id": "step_region",
-      "question": "🌍 ¿Cuál es la región afectada?\n*Ej:* Occidente, Oriente, Centro, Sur",
+      "question": "🌍 ¿Cuál es la región afectada?\n*Ej:* Región 0, Región 1, Región 2, Región 3",
       "validation": {
         "type": "text"
       },
@@ -25,7 +25,7 @@
     },
     {
       "id": "step_module",
-      "question": "🔧 ¿Cuál es el módulo que está presentando el problema?\n*Ej:* Facturación, Inventario, Reportes, Caja",
+      "question": "🔧 ¿Cuál es el módulo que está presentando el problema?\n*Ej:* Facturación, Inventario, Reportes, Almacenes",
       "validation": {
         "type": "text"
       },

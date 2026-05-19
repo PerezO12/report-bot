@@ -62,6 +62,7 @@ async def _finish_flow(
     flow: FlowDefinition,
     store: StateStore,
     admin_chat_id: int,
+    on_end=None,
 ) -> int:
     user = update.effective_user
     state = store.get_state(user.id)
@@ -86,7 +87,6 @@ async def _finish_flow(
     # Send photo to admin if any photo step was answered
     for step_id, file_id in state.photo_file_ids.items():
         if file_id:
-            step_def = flow.steps_by_id.get(step_id)
             caption = (
                 f"📷 Evidencia adjunta al reporte de *{flow.title}*\n"
                 f"Enviado por: {user.first_name or ''} (@{user.username or user.id})"
@@ -99,6 +99,10 @@ async def _finish_flow(
             )
 
     store.clear_session(user.id)
+
+    if on_end:
+        await on_end(update, context)
+
     return ConversationHandler.END
 
 
@@ -110,6 +114,7 @@ async def _handle_text_step(
     states_map: dict[str, int],
     store: StateStore,
     admin_chat_id: int,
+    on_end=None,
 ) -> int:
     user = update.effective_user
     current_state = states_map[step_def.id]
@@ -130,7 +135,7 @@ async def _handle_text_step(
         next_id = get_next_step_id(step_def, state.answers)
 
         if next_id is None:
-            return await _finish_flow(update, context, flow, store, admin_chat_id)
+            return await _finish_flow(update, context, flow, store, admin_chat_id, on_end)
 
         next_step = flow.steps_by_id[next_id]
         await _send_question(update, context, next_step)
@@ -154,6 +159,7 @@ async def _handle_callback_step(
     states_map: dict[str, int],
     store: StateStore,
     admin_chat_id: int,
+    on_end=None,
 ) -> int:
     query = update.callback_query
     await query.answer()
@@ -180,7 +186,7 @@ async def _handle_callback_step(
         next_id = get_next_step_id(step_def, state.answers)
 
         if next_id is None:
-            return await _finish_flow(update, context, flow, store, admin_chat_id)
+            return await _finish_flow(update, context, flow, store, admin_chat_id, on_end)
 
         next_step = flow.steps_by_id[next_id]
         await context.bot.send_message(
@@ -210,6 +216,7 @@ async def _handle_photo_step(
     states_map: dict[str, int],
     store: StateStore,
     admin_chat_id: int,
+    on_end=None,
 ) -> int:
     user = update.effective_user
     current_state = states_map[step_def.id]
@@ -231,7 +238,7 @@ async def _handle_photo_step(
         next_id = get_next_step_id(step_def, state.answers)
 
         if next_id is None:
-            return await _finish_flow(update, context, flow, store, admin_chat_id)
+            return await _finish_flow(update, context, flow, store, admin_chat_id, on_end)
 
         next_step = flow.steps_by_id[next_id]
         await _send_question(update, context, next_step)
@@ -255,6 +262,7 @@ async def _handle_skip_photo(
     states_map: dict[str, int],
     store: StateStore,
     admin_chat_id: int,
+    on_end=None,
 ) -> int:
     user = update.effective_user
 
@@ -270,7 +278,7 @@ async def _handle_skip_photo(
     next_id = get_next_step_id(step_def, state.answers)
 
     if next_id is None:
-        return await _finish_flow(update, context, flow, store, admin_chat_id)
+        return await _finish_flow(update, context, flow, store, admin_chat_id, on_end)
 
     next_step = flow.steps_by_id[next_id]
     await _send_question(update, context, next_step)
@@ -297,6 +305,7 @@ def _build_step_handlers(
     states_map: dict[str, int],
     store: StateStore,
     admin_chat_id: int,
+    on_end=None,
 ) -> list[Any]:
     vtype = step_def.validation.type
     has_keyboard = bool(step_def.keyboard and step_def.keyboard.enabled)
@@ -309,6 +318,7 @@ def _build_step_handlers(
             states_map=states_map,
             store=store,
             admin_chat_id=admin_chat_id,
+            on_end=on_end,
         )
         skip_fn = partial(
             _handle_skip_photo,
@@ -317,6 +327,7 @@ def _build_step_handlers(
             states_map=states_map,
             store=store,
             admin_chat_id=admin_chat_id,
+            on_end=on_end,
         )
         wrong_fn = partial(
             _wrong_input_in_photo_state,
@@ -339,6 +350,7 @@ def _build_step_handlers(
             states_map=states_map,
             store=store,
             admin_chat_id=admin_chat_id,
+            on_end=on_end,
         )
         return [CallbackQueryHandler(callback_fn)]
 
@@ -349,14 +361,52 @@ def _build_step_handlers(
         states_map=states_map,
         store=store,
         admin_chat_id=admin_chat_id,
+        on_end=on_end,
     )
     return [MessageHandler(filters.TEXT & ~filters.COMMAND, text_fn)]
+
+
+async def _start_flow_common(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    flow: FlowDefinition,
+    store: StateStore,
+    states_map: dict[str, int],
+    from_callback: bool = False,
+) -> int:
+    user = update.effective_user
+    first_step = flow.steps[0]
+    store.init_session(user.id, flow.flow_id, first_step.id)
+
+    if from_callback:
+        query = update.callback_query
+        await query.answer()
+        await query.edit_message_text(
+            f"📋 *{flow.title}*\nVamos paso a paso. Puedes cancelar en cualquier momento con /cancelar.\n",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        keyboard = _make_keyboard(first_step)
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=first_step.question,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=keyboard,
+        )
+    else:
+        await update.message.reply_text(
+            f"📋 *{flow.title}*\nVamos paso a paso. Puedes cancelar en cualquier momento con /cancelar.\n",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        await _send_question(update, context, first_step)
+
+    return states_map[first_step.id]
 
 
 def build_conversation_handler(
     flow: FlowDefinition,
     store: StateStore,
     admin_chat_id: int,
+    on_end=None,
 ) -> ConversationHandler:
     states_map = build_states_map(flow)
     command = flow.command.lstrip("/")
@@ -364,15 +414,12 @@ def build_conversation_handler(
     async def start_flow(
         update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> int:
-        user = update.effective_user
-        first_step = flow.steps[0]
-        store.init_session(user.id, flow.flow_id, first_step.id)
-        await update.message.reply_text(
-            f"📋 *{flow.title}*\nVamos paso a paso. Puedes cancelar en cualquier momento con /cancelar.\n",
-            parse_mode=ParseMode.MARKDOWN,
-        )
-        await _send_question(update, context, first_step)
-        return states_map[first_step.id]
+        return await _start_flow_common(update, context, flow, store, states_map, from_callback=False)
+
+    async def start_flow_from_button(
+        update: Update, context: ContextTypes.DEFAULT_TYPE
+    ) -> int:
+        return await _start_flow_common(update, context, flow, store, states_map, from_callback=True)
 
     async def cancel(
         update: Update, context: ContextTypes.DEFAULT_TYPE
@@ -382,6 +429,8 @@ def build_conversation_handler(
         await update.message.reply_text(
             "🚫 Operación cancelada. Puedes comenzar de nuevo cuando quieras."
         )
+        if on_end:
+            await on_end(update, context)
         return ConversationHandler.END
 
     # Build states dict: {state_int: [handlers]}
@@ -389,15 +438,19 @@ def build_conversation_handler(
     for step_def in flow.steps:
         state_int = states_map[step_def.id]
         states[state_int] = _build_step_handlers(
-            flow, step_def, states_map, store, admin_chat_id
+            flow, step_def, states_map, store, admin_chat_id, on_end
         )
 
     return ConversationHandler(
-        entry_points=[CommandHandler(command, start_flow)],
+        entry_points=[
+            CommandHandler(command, start_flow),
+            CallbackQueryHandler(start_flow_from_button, pattern=f"^flow:{flow.flow_id}$"),
+        ],
         states=states,
         fallbacks=[CommandHandler("cancelar", cancel)],
         per_user=True,
         per_chat=True,
+        per_message=False,
         allow_reentry=True,
         name=flow.flow_id,
     )
