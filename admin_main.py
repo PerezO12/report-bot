@@ -72,6 +72,7 @@ async def _init_app():
 def main() -> None:
     """Main entry point."""
     import asyncio
+    import os
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -83,21 +84,6 @@ def main() -> None:
     except KeyboardInterrupt:
         logger.info("Shutdown signal received.")
     finally:
-        # Cleanup
-        if not loop.is_closed():
-            logger.info("Shutting down...")
-            try:
-                loop.run_until_complete(app.updater.stop())
-            except Exception as e:
-                logger.warning("Error stopping updater: %s", e)
-
-            try:
-                loop.run_until_complete(app.shutdown())
-            except Exception as e:
-                logger.warning("Error in shutdown: %s", e)
-
-            loop.close()
-
         logger.info("Admin bot stopped.")
         try:
             sys.exit(0)

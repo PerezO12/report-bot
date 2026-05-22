@@ -124,6 +124,7 @@ async def _init_app():
 def main() -> None:
     import asyncio
     import sys
+    import os
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -135,27 +136,6 @@ def main() -> None:
     except KeyboardInterrupt:
         logger.info("Shutdown signal received.")
     finally:
-        # El loop puede ya estar cerrado por run_polling
-        if not loop.is_closed():
-            # PASO 1: Detener el updater
-            logger.info("Deteniendo updater...")
-            try:
-                loop.run_until_complete(app.updater.stop())
-            except Exception as e:
-                logger.warning("Error stopping updater: %s", e)
-
-            # PASO 2: Hacer shutdown de la aplicación
-            logger.info("Haciendo shutdown de aplicación...")
-            try:
-                loop.run_until_complete(app.shutdown())
-            except Exception as e:
-                logger.warning("Error in shutdown: %s", e)
-
-            # PASO 3: Cerrar el event loop
-            logger.info("Cerrando event loop...")
-            loop.close()
-
-        # PASO 4: Salir completamente del proceso
         logger.info("Bot detenido.")
         try:
             sys.exit(0)  # Intenta cleanup ordenado
