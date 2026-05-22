@@ -11,3 +11,6 @@ dist/
 build/
 .pytest_cache/
 *.log
+*.db
+*.db-shm
+*.db-wal
