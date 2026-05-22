@@ -8,6 +8,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 from bot.conversation import build_conversation_handler
+from bot.database import init_db
 from bot.flow_loader import FlowDefinition, load_all_flows
 from bot.state_store import StateStore
 
@@ -67,12 +68,15 @@ def _build_start_handler(menu_text: str, menu_keyboard: InlineKeyboardMarkup):
     return CommandHandler("start", start)
 
 
-def main() -> None:
+async def _init_app():
     bot_token = _require_env("BOT_TOKEN")
     admin_chat_id = int(_require_env("ADMIN_CHAT_ID"))
 
     use_proxy = os.getenv("USE_PROXY", "false").strip().lower() == "true"
     proxy_url = os.getenv("PROXY_URL", "http://proxy.server:3128").strip()
+
+    # Initialize DB
+    db = await init_db("botdaily.db")
 
     flows = load_all_flows("flows")
     logger.info("Loaded %d flow(s): %s", len(flows), [f.flow_id for f in flows])
@@ -100,12 +104,25 @@ def main() -> None:
     app.add_handler(_build_start_handler(menu_text, menu_keyboard))
 
     for flow in flows:
-        handler = build_conversation_handler(flow, store, admin_chat_id, on_end=send_main_menu)
+        handler = build_conversation_handler(flow, store, admin_chat_id, on_end=send_main_menu, db=db)
         app.add_handler(handler)
         logger.info("Registered flow '%s' → command %s", flow.flow_id, flow.command)
 
     logger.info("Bot is running. Press Ctrl+C to stop.")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    return app
+
+
+def main() -> None:
+    import asyncio
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    try:
+        app = loop.run_until_complete(_init_app())
+        app.run_polling(allowed_updates=Update.ALL_TYPES)
+    finally:
+        loop.close()
 
 
 if __name__ == "__main__":

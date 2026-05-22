@@ -7,7 +7,7 @@ class UserState:
     flow_id: str
     current_step_id: str
     answers: dict[str, Any] = field(default_factory=dict)
-    photo_file_ids: dict[str, str | None] = field(default_factory=dict)
+    media_file_ids: dict[str, dict | None] = field(default_factory=dict)
 
 
 class StateStore:
@@ -30,9 +30,21 @@ class StateStore:
             state.current_step_id = step_id
 
     def set_photo(self, user_id: int, step_id: str, file_id: str | None) -> None:
+        """Backward compat — maps to set_media with type 'photo'."""
+        if file_id:
+            self.set_media(user_id, step_id, file_id, "photo")
+        else:
+            self.set_media(user_id, step_id, None, "photo")
+
+    def set_media(
+        self, user_id: int, step_id: str, file_id: str | None, media_type: str
+    ) -> None:
+        """Store media file_id with type (photo, video, document)."""
         state = self._store.get(user_id)
         if state:
-            state.photo_file_ids[step_id] = file_id
+            state.media_file_ids[step_id] = (
+                {"file_id": file_id, "media_type": media_type} if file_id else None
+            )
             state.current_step_id = step_id
 
     def clear_session(self, user_id: int) -> None:

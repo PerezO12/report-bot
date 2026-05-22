@@ -4,13 +4,42 @@
   "title": "Reporte de Incidencia",
   "steps": [
     {
-      "id": "step_region",
-      "question": "🌍 ¿Cuál es la región afectada?\n*Ej:* Región 0, Región 1, Región 2, Región 3",
+      "id": "step_type",
+      "question": "❓ ¿Es una incidencia o una solicitud?",
       "validation": {
-        "type": "text"
+        "type": "options",
+        "choices": ["Incidencia", "Solicitud"]
       },
       "optional": false,
-      "keyboard": null,
+      "keyboard": {
+        "enabled": true,
+        "layout": "column",
+        "buttons": [
+          {"label": "🚨 Incidencia", "value": "incidencia"},
+          {"label": "📝 Solicitud", "value": "solicitud"}
+        ]
+      },
+      "next_step": "step_region"
+    },
+    {
+      "id": "step_region",
+      "question": "🌍 ¿Cuál es la región?",
+      "validation": {
+        "type": "options",
+        "choices": ["Región 0", "Región 1", "Región 2", "Región 3", "Región 4"]
+      },
+      "optional": false,
+      "keyboard": {
+        "enabled": true,
+        "layout": "column",
+        "buttons": [
+          {"label": "Región 0", "value": "region_0"},
+          {"label": "Región 1", "value": "region_1"},
+          {"label": "Región 2", "value": "region_2"},
+          {"label": "Región 3", "value": "region_3"},
+          {"label": "Región 4", "value": "region_4"}
+        ]
+      },
       "next_step": "step_business"
     },
     {
@@ -21,11 +50,11 @@
       },
       "optional": false,
       "keyboard": null,
-      "next_step": "step_module"
+      "next_step": "step_system"
     },
     {
-      "id": "step_module",
-      "question": "🔧 ¿Cuál es el módulo que está presentando el problema?\n*Ej:* Facturación, Inventario, Reportes, Almacenes",
+      "id": "step_system",
+      "question": "🔧 ¿Cuál es el sistema, entorno y versión?\n*Ej:* Admin Beta, APK PV Legacy, Admin Legacy",
       "validation": {
         "type": "text"
       },
@@ -35,21 +64,39 @@
     },
     {
       "id": "step_description",
-      "question": "📝 Describe el problema de forma detallada:\n*Ej:* Al intentar guardar una factura con más de 50 líneas de detalle, el sistema muestra el error 'Límite excedido' y no permite continuar.",
+      "question": "📝 Descripción detallada del problema.\nIncluye paso a paso, trazas y datos reales.\n*Ej:* Producto 'Pollo' en Factura No. 35 del ciclo del 7/4/26 no aparece en el reporte.",
       "validation": {
         "type": "text"
       },
       "optional": false,
       "keyboard": null,
+      "next_step": "step_confirmed"
+    },
+    {
+      "id": "step_confirmed",
+      "question": "✅ ¿Fue revisado y confirmado por el comercial que reporta?",
+      "validation": {
+        "type": "boolean",
+        "choices": ["Sí", "No"]
+      },
+      "optional": false,
+      "keyboard": {
+        "enabled": true,
+        "layout": "row",
+        "buttons": [
+          {"label": "✅ Sí", "value": "yes"},
+          {"label": "❌ No", "value": "no"}
+        ]
+      },
       "next_step": "step_evidence"
     },
     {
       "id": "step_evidence",
-      "question": "📷 Adjunta una foto como evidencia del problema.\n_Si no tienes evidencia disponible, envía_ /skip _para continuar sin foto._",
+      "question": "📎 Envía fotos y/o vídeos como evidencia del problema.\n_Este paso es obligatorio._",
       "validation": {
-        "type": "photo"
+        "type": "media"
       },
-      "optional": true,
+      "optional": false,
       "keyboard": null,
       "next_step": null
     }

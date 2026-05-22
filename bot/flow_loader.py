@@ -48,7 +48,18 @@ class FlowDefinition:
     steps_by_id: dict[str, StepDefinition] = field(default_factory=dict)
 
 
-_VALID_TYPES = {"text", "number", "date", "email", "regex", "options", "boolean", "photo"}
+_VALID_TYPES = {
+    "text",
+    "number",
+    "date",
+    "email",
+    "regex",
+    "options",
+    "boolean",
+    "photo",
+    "date_selector",
+    "media",
+}
 
 
 def _parse_validation(raw: dict, step_id: str) -> ValidationDef:

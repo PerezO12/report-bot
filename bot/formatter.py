@@ -72,24 +72,26 @@ def format_daily_summary(answers: dict[str, Any], user: User) -> str:
 
 def format_incidencia_summary(
     answers: dict[str, Any],
-    photo_file_ids: dict[str, str | None],
+    media_file_ids: dict[str, dict | None],
     user: User,
 ) -> str:
-    has_photo = bool(photo_file_ids.get("step_evidence"))
+    has_media = bool(media_file_ids.get("step_evidence"))
     lines = [
         "*🚨 REPORTE DE INCIDENCIA*",
         "━━━━━━━━━━━━━━━━━━━━━━━━",
         f"*Enviado por:* {_user_tag(user)}",
         f"*Timestamp:* {_now_utc()}",
         "",
-        f"*🌍 Región:* {_get(answers, 'step_region')}",
+        f"*❓ Tipo:* {_get(answers, 'step_type')}",
         f"*🏪 Negocio:* {_get(answers, 'step_business')}",
-        f"*🔧 Módulo afectado:* {_get(answers, 'step_module')}",
+        f"*🌍 Región:* {_get(answers, 'step_region')}",
+        f"*🔧 Sistema/Entorno:* {_get(answers, 'step_system')}",
         "",
         "*📝 Descripción del problema:*",
         f"  {_get(answers, 'step_description')}",
         "",
-        f"*📷 Evidencia:* {'Foto adjunta ✅' if has_photo else 'Sin evidencia'}",
+        f"*✅ Confirmado por comercial:* {_get(answers, 'step_confirmed')}",
+        f"*📎 Evidencia:* {'Adjunta ✅' if has_media else 'Sin evidencia'}",
         "",
         "━━━━━━━━━━━━━━━━━━━━━━━━",
     ]
@@ -101,7 +103,7 @@ def format_summary(flow: FlowDefinition, state: UserState, user: User) -> str:
     if template == "daily":
         return format_daily_summary(state.answers, user)
     if template == "incidencia":
-        return format_incidencia_summary(state.answers, state.photo_file_ids, user)
+        return format_incidencia_summary(state.answers, state.media_file_ids, user)
     # Generic fallback for any future flow
     return _format_generic(flow, state, user)
 
@@ -115,8 +117,12 @@ def _format_generic(flow: FlowDefinition, state: UserState, user: User) -> str:
         "",
     ]
     for step in flow.steps:
-        val = state.answers.get(step.id) or state.photo_file_ids.get(step.id)
-        display = "_(foto adjunta)_" if step.id in state.photo_file_ids else str(val or "—")
+        val = state.answers.get(step.id)
+        media = state.media_file_ids.get(step.id)
+        if media:
+            display = f"_(📎 adjunto)_"
+        else:
+            display = str(val or "—")
         label = step.question.split("\n")[0].replace("*", "").strip(" ?¿:")
         lines.append(f"*{label}:* {display}")
     lines += ["", "━━━━━━━━━━━━━━━━━━━━━━━━", f"_{_now_utc()}_"]

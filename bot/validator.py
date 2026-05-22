@@ -84,6 +84,16 @@ def validate_photo(message: Message) -> tuple[bool, str | None]:
     return True, None
 
 
+def validate_media(message: Message) -> tuple[bool, str | None]:
+    """Accepts photo, video, or document file."""
+    if message.photo or message.video or message.document:
+        return True, None
+    return (
+        False,
+        "Por favor envía una *foto* o *vídeo* como evidencia.",
+    )
+
+
 def run_validation(
     step_def: StepDefinition, message: Message
 ) -> tuple[bool, str | None]:
