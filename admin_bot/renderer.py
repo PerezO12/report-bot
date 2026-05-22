@@ -103,7 +103,7 @@ def render_list(
     emoji = emoji_map.get(tipo, "📋")
 
     header = f"*{emoji} {title or tipo.capitalize()}*\n"
-    header += f"_Mostrando {start}\-{end} de {total}_\n\n"
+    header += f"_Mostrando {start}-{end} de {total}_\n\n"
 
     body = "\n\n".join(cards)
 

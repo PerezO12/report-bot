@@ -316,7 +316,7 @@ async def _handle_incidencia(query, action: str, db: aiosqlite.Connection, conte
 
         if not reports:
             text = "*🚨 Incidencias*\n\n_No hay incidencias registradas._"
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="menu:incidencias")]]
+            buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="menu:incidencias")]])
         else:
             cards = [render_incidencia_card(r) for r in reports]
             text = render_list(cards, "incidencia", offset, total, "Incidencias")
@@ -338,7 +338,7 @@ async def _handle_incidencia(query, action: str, db: aiosqlite.Connection, conte
 
         await query.edit_message_text(
             text,
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=buttons,
         )
 
@@ -371,16 +371,15 @@ async def _handle_incidencia(query, action: str, db: aiosqlite.Connection, conte
 
         if not reports:
             text = f"*🚨 Incidencias — {date_str}*\n\n_No hay incidencias en esta fecha._"
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="inc:filter:date")]]
         else:
             cards = [render_incidencia_card(r) for r in reports]
             text = render_list(cards, "incidencia", 0, total, f"Incidencias — {date_str}")
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="inc:filter:date")]]
 
+        buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="inc:filter:date")]])
         await query.edit_message_text(
             text,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=buttons,
         )
 
     elif parts[0] == "region":
@@ -391,16 +390,15 @@ async def _handle_incidencia(query, action: str, db: aiosqlite.Connection, conte
 
         if not reports:
             text = f"*🚨 Incidencias — {region_label}*\n\n_No hay incidencias en esta región._"
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="inc:filter:region")]]
         else:
             cards = [render_incidencia_card(r) for r in reports]
             text = render_list(cards, "incidencia", 0, total, f"Incidencias — {region_label}")
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="inc:filter:region")]]
 
+        buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="inc:filter:region")]])
         await query.edit_message_text(
             text,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=buttons,
         )
 
 
@@ -434,7 +432,7 @@ async def _handle_solicitud(query, action: str, db: aiosqlite.Connection, contex
 
         if not reports:
             text = "*📝 Solicitudes*\n\n_No hay solicitudes registradas._"
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="menu:solicitudes")]]
+            buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="menu:solicitudes")]])
         else:
             cards = [render_solicitud_card(r) for r in reports]
             text = render_list(cards, "solicitud", offset, total, "Solicitudes")
@@ -456,7 +454,7 @@ async def _handle_solicitud(query, action: str, db: aiosqlite.Connection, contex
 
         await query.edit_message_text(
             text,
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=buttons,
         )
 
@@ -485,16 +483,15 @@ async def _handle_solicitud(query, action: str, db: aiosqlite.Connection, contex
 
         if not reports:
             text = f"*📝 Solicitudes — {date_str}*\n\n_No hay solicitudes en esta fecha._"
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="sol:filter:date")]]
         else:
             cards = [render_solicitud_card(r) for r in reports]
             text = render_list(cards, "solicitud", 0, total, f"Solicitudes — {date_str}")
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="sol:filter:date")]]
 
+        buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="sol:filter:date")]])
         await query.edit_message_text(
             text,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=buttons,
         )
 
     elif parts[0] == "apk":
@@ -504,16 +501,15 @@ async def _handle_solicitud(query, action: str, db: aiosqlite.Connection, contex
 
         if not reports:
             text = f"*📝 Solicitudes — {apk_name}*\n\n_No hay solicitudes para este APK._"
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="sol:filter:apk")]]
         else:
             cards = [render_solicitud_card(r) for r in reports]
             text = render_list(cards, "solicitud", 0, total, f"Solicitudes — {apk_name}")
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="sol:filter:apk")]]
 
+        buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="sol:filter:apk")]])
         await query.edit_message_text(
             text,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=buttons,
         )
 
 
@@ -546,7 +542,7 @@ async def _handle_daily(query, action: str, db: aiosqlite.Connection, context: C
 
         if not reports:
             text = "*📊 Dailies*\n\n_No hay dailies registrados._"
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="menu:dailies")]]
+            buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="menu:dailies")]])
         else:
             cards = [render_daily_card(r) for r in reports]
             text = render_list(cards, "daily", offset, total, "Dailies")
@@ -568,7 +564,7 @@ async def _handle_daily(query, action: str, db: aiosqlite.Connection, context: C
 
         await query.edit_message_text(
             text,
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=buttons,
         )
 
@@ -587,16 +583,15 @@ async def _handle_daily(query, action: str, db: aiosqlite.Connection, context: C
 
         if not reports:
             text = f"*📊 Dailies — {date_str}*\n\n_No hay dailies en esta fecha._"
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="daily:filter:date")]]
         else:
             cards = [render_daily_card(r) for r in reports]
             text = render_list(cards, "daily", 0, total, f"Dailies — {date_str}")
-            buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="daily:filter:date")]]
 
+        buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="daily:filter:date")]])
         await query.edit_message_text(
             text,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=buttons,
         )
 
 
@@ -632,11 +627,11 @@ async def _handle_admin(query, action: str, db: aiosqlite.Connection, context: C
             text += "\n".join(f"• `{uid}`" for uid in admin_ids)
         text += f"\n\n_Total: {len(admin_ids)}_"
 
-        buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="menu:admins")]]
+        buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="menu:admins")]])
         await query.edit_message_text(
             text,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=buttons,
         )
 
     elif action == "add":
@@ -673,11 +668,11 @@ async def _handle_admin(query, action: str, db: aiosqlite.Connection, context: C
         else:
             text = f"⚠️ No se pudo remover administrador `{user_id}`."
 
-        buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="menu:admins")]]
+        buttons = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="menu:admins")]])
         await query.edit_message_text(
             text,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=buttons,
         )
 
 
@@ -688,20 +683,22 @@ async def _handle_admin(query, action: str, db: aiosqlite.Connection, context: C
 def build_admin_conversation(db: aiosqlite.Connection) -> ConversationHandler:
     """Build conversation handler for adding APKs/modules."""
 
-    async def _wait_for_item_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-        """Wait for item name input."""
+    async def _handle_item_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+        """Process item input when pending_add flag is set."""
         item_type = context.user_data.get("pending_add", "").strip()
+
+        # Only process if pending_add is configured
         if not item_type:
             return ConversationHandler.END
 
+        # Process the input
         confirm_fn = partial(_confirm_add_item, item_type=item_type, db=db)
+        context.user_data.pop("pending_add", None)
         return await confirm_fn(update, context)
 
     return ConversationHandler(
-        entry_points=[],  # Triggered programmatically from callbacks
-        states={
-            STATE_WAITING_ITEM_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, _wait_for_item_name)]
-        },
+        entry_points=[MessageHandler(filters.TEXT & ~filters.COMMAND, _handle_item_input)],
+        states={},  # No states needed - everything is handled in entry point
         fallbacks=[],
         per_user=True,
         per_chat=True,
