@@ -321,16 +321,20 @@ async def _handle_incidencia(query, action: str, db: aiosqlite.Connection, conte
             cards = [render_incidencia_card(r) for r in reports]
             text = render_list(cards, "incidencia", offset, total, "Incidencias")
 
-            buttons = []
+            # Build pagination buttons
+            pagination_buttons = []
             if offset > 0:
-                buttons.append(InlineKeyboardButton("← Anterior", callback_data=f"inc:list:all:{offset - 10}"))
+                pagination_buttons.append(InlineKeyboardButton("← Anterior", callback_data=f"inc:list:all:{offset - 10}"))
             if offset + 10 < total:
-                buttons.append(InlineKeyboardButton("Siguiente →", callback_data=f"inc:list:all:{offset + 10}"))
+                pagination_buttons.append(InlineKeyboardButton("Siguiente →", callback_data=f"inc:list:all:{offset + 10}"))
 
-            buttons_row = [buttons] if buttons else []
-            buttons_row.append([InlineKeyboardButton("🔙 Volver", callback_data="menu:incidencias")])
+            # Build keyboard: pagination row + back button
+            keyboard_buttons = []
+            if pagination_buttons:
+                keyboard_buttons.append(pagination_buttons)
+            keyboard_buttons.append([InlineKeyboardButton("🔙 Volver", callback_data="menu:incidencias")])
 
-            buttons = InlineKeyboardMarkup(buttons_row) if buttons_row else InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="menu:incidencias")]])
+            buttons = InlineKeyboardMarkup(keyboard_buttons)
 
         await query.edit_message_text(
             text,
@@ -435,16 +439,20 @@ async def _handle_solicitud(query, action: str, db: aiosqlite.Connection, contex
             cards = [render_solicitud_card(r) for r in reports]
             text = render_list(cards, "solicitud", offset, total, "Solicitudes")
 
-            buttons = []
+            # Build pagination buttons
+            pagination_buttons = []
             if offset > 0:
-                buttons.append(InlineKeyboardButton("← Anterior", callback_data=f"sol:list:all:{offset - 10}"))
+                pagination_buttons.append(InlineKeyboardButton("← Anterior", callback_data=f"sol:list:all:{offset - 10}"))
             if offset + 10 < total:
-                buttons.append(InlineKeyboardButton("Siguiente →", callback_data=f"sol:list:all:{offset + 10}"))
+                pagination_buttons.append(InlineKeyboardButton("Siguiente →", callback_data=f"sol:list:all:{offset + 10}"))
 
-            buttons_row = [buttons] if buttons else []
-            buttons_row.append([InlineKeyboardButton("🔙 Volver", callback_data="menu:solicitudes")])
+            # Build keyboard: pagination row + back button
+            keyboard_buttons = []
+            if pagination_buttons:
+                keyboard_buttons.append(pagination_buttons)
+            keyboard_buttons.append([InlineKeyboardButton("🔙 Volver", callback_data="menu:solicitudes")])
 
-            buttons = InlineKeyboardMarkup(buttons_row) if buttons_row else InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="menu:solicitudes")]])
+            buttons = InlineKeyboardMarkup(keyboard_buttons)
 
         await query.edit_message_text(
             text,
@@ -543,16 +551,20 @@ async def _handle_daily(query, action: str, db: aiosqlite.Connection, context: C
             cards = [render_daily_card(r) for r in reports]
             text = render_list(cards, "daily", offset, total, "Dailies")
 
-            buttons = []
+            # Build pagination buttons
+            pagination_buttons = []
             if offset > 0:
-                buttons.append(InlineKeyboardButton("← Anterior", callback_data=f"daily:list:all:{offset - 10}"))
+                pagination_buttons.append(InlineKeyboardButton("← Anterior", callback_data=f"daily:list:all:{offset - 10}"))
             if offset + 10 < total:
-                buttons.append(InlineKeyboardButton("Siguiente →", callback_data=f"daily:list:all:{offset + 10}"))
+                pagination_buttons.append(InlineKeyboardButton("Siguiente →", callback_data=f"daily:list:all:{offset + 10}"))
 
-            buttons_row = [buttons] if buttons else []
-            buttons_row.append([InlineKeyboardButton("🔙 Volver", callback_data="menu:dailies")])
+            # Build keyboard: pagination row + back button
+            keyboard_buttons = []
+            if pagination_buttons:
+                keyboard_buttons.append(pagination_buttons)
+            keyboard_buttons.append([InlineKeyboardButton("🔙 Volver", callback_data="menu:dailies")])
 
-            buttons = InlineKeyboardMarkup(buttons_row) if buttons_row else InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Volver", callback_data="menu:dailies")]])
+            buttons = InlineKeyboardMarkup(keyboard_buttons)
 
         await query.edit_message_text(
             text,
