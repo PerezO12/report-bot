@@ -148,12 +148,10 @@ def main() -> None:
 
         # PASO 4: Salir completamente del proceso
         logger.info("Bot detenido.")
-        # En contenedor: usar sys.exit(0) para cleanup ordenado
-        # En local: usar os._exit(0) para cierre instantáneo
-        if os.getenv("CONTAINER", "false").lower() == "true":
-            sys.exit(0)
-        else:
-            os._exit(0)
+        try:
+            sys.exit(0)  # Intenta cleanup ordenado
+        except:
+            os._exit(0)  # Fallback: mata inmediatamente
 
 
 if __name__ == "__main__":
