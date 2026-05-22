@@ -70,7 +70,8 @@ def _build_start_handler(menu_text: str, menu_keyboard: InlineKeyboardMarkup):
 
 async def _init_app():
     bot_token = _require_env("BOT_TOKEN")
-    admin_chat_id = int(_require_env("ADMIN_CHAT_ID"))
+    incidencias_group_id = int(_require_env("INCIDENCIAS_GROUP_ID"))
+    dailies_group_id = int(_require_env("DAILIES_GROUP_ID"))
 
     use_proxy = os.getenv("USE_PROXY", "false").strip().lower() == "true"
     proxy_url = os.getenv("PROXY_URL", "http://proxy.server:3128").strip()
@@ -103,10 +104,18 @@ async def _init_app():
     # /start menu — registered before ConversationHandlers so it's always reachable
     app.add_handler(_build_start_handler(menu_text, menu_keyboard))
 
+    # Map flow types to their report groups
+    flow_groups = {
+        "daily": dailies_group_id,
+        "incidencia": incidencias_group_id,
+        "solicitud": incidencias_group_id,  # Solicitudes go to same group as incidencias
+    }
+
     for flow in flows:
-        handler = build_conversation_handler(flow, store, admin_chat_id, on_end=send_main_menu, db=db)
+        report_group_id = flow_groups.get(flow.flow_id, incidencias_group_id)
+        handler = build_conversation_handler(flow, store, report_group_id, on_end=send_main_menu, db=db)
         app.add_handler(handler)
-        logger.info("Registered flow '%s' → command %s", flow.flow_id, flow.command)
+        logger.info("Registered flow '%s' → command %s (group: %d)", flow.flow_id, flow.command, report_group_id)
 
     logger.info("Bot is running. Press Ctrl+C to stop.")
     return app
