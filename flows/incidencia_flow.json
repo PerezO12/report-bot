@@ -1,34 +1,8 @@
 {
   "flow_id": "incidencia",
   "command": "/incidencia",
-  "title": "Reporte de Incidencia o Solicitud",
+  "title": "Reporte de Incidencia",
   "steps": [
-    {
-      "id": "step_type",
-      "question": "❓ ¿Es una incidencia o una solicitud?",
-      "validation": {
-        "type": "options",
-        "choices": ["Incidencia", "Solicitud"]
-      },
-      "optional": false,
-      "keyboard": {
-        "enabled": true,
-        "layout": "column",
-        "buttons": [
-          {"label": "🚨 Incidencia", "value": "incidencia"},
-          {"label": "📝 Solicitud", "value": "solicitud"}
-        ]
-      },
-      "next_step": {
-        "type": "conditional",
-        "on": "step_type",
-        "cases": {
-          "incidencia": "step_region",
-          "solicitud": "step_business_request"
-        },
-        "default": null
-      }
-    },
     {
       "id": "step_region",
       "question": "🌍 ¿Cuál es la región?",
@@ -48,26 +22,46 @@
           {"label": "Región 4", "value": "region_4"}
         ]
       },
-      "next_step": "step_business_incident"
+      "next_step": "step_business"
     },
     {
-      "id": "step_business_incident",
+      "id": "step_business",
       "question": "🏪 ¿Cuál es el nombre del negocio?\n*Ej:* Supermercado El Sol",
       "validation": {
         "type": "text"
       },
       "optional": false,
       "keyboard": null,
-      "next_step": "step_system"
+      "next_step": "step_module"
     },
     {
-      "id": "step_system",
-      "question": "🔧 ¿Cuál es el sistema, entorno y versión?\n*Ej:* Admin Beta, APK PV Legacy, Admin Legacy",
+      "id": "step_module",
+      "question": "📱 ¿Cuál es el módulo o sistema afectado?",
       "validation": {
-        "type": "text"
+        "type": "options",
+        "choices": []
       },
       "optional": false,
-      "keyboard": null,
+      "keyboard": {
+        "enabled": true,
+        "layout": "column",
+        "buttons": []
+      },
+      "next_step": "step_priority"
+    },
+    {
+      "id": "step_priority",
+      "question": "⚠️ ¿Cuál es la prioridad?",
+      "validation": {
+        "type": "options",
+        "choices": []
+      },
+      "optional": false,
+      "keyboard": {
+        "enabled": true,
+        "layout": "column",
+        "buttons": []
+      },
       "next_step": "step_description"
     },
     {
@@ -103,55 +97,6 @@
       "question": "📎 Envía fotos y/o vídeos como evidencia del problema.\n_Este paso es obligatorio._",
       "validation": {
         "type": "media"
-      },
-      "optional": false,
-      "keyboard": null,
-      "next_step": null
-    },
-    {
-      "id": "step_business_request",
-      "question": "🏪 ¿Cuál es el nombre del negocio?\n*Ej:* Supermercado El Sol",
-      "validation": {
-        "type": "text"
-      },
-      "optional": false,
-      "keyboard": null,
-      "next_step": "step_apk"
-    },
-    {
-      "id": "step_apk",
-      "question": "📱 ¿Cuál es la aplicación o módulo?",
-      "validation": {
-        "type": "options",
-        "choices": ["Administración", "APK Gestión", "APK Punto de Venta"]
-      },
-      "optional": false,
-      "keyboard": {
-        "enabled": true,
-        "layout": "column",
-        "buttons": [
-          {"label": "💼 Administración", "value": "administracion"},
-          {"label": "📊 APK Gestión", "value": "apk_gestion"},
-          {"label": "🛒 APK Punto de Venta", "value": "apk_pv"}
-        ]
-      },
-      "next_step": "step_implementation"
-    },
-    {
-      "id": "step_implementation",
-      "question": "💡 ¿Qué se quiere implementar o mejorar?\n*Ej:* Agregar opción para exportar reportes en PDF",
-      "validation": {
-        "type": "text"
-      },
-      "optional": false,
-      "keyboard": null,
-      "next_step": "step_usage_example"
-    },
-    {
-      "id": "step_usage_example",
-      "question": "📚 ¿Cómo se usaría? Describe el flujo o ejemplo de uso.\n*Ej:* Usuario entra a reportes, hace clic en 'Exportar PDF', recibe archivo",
-      "validation": {
-        "type": "text"
       },
       "optional": false,
       "keyboard": null,

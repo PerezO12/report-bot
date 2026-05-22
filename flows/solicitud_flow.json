@@ -1,0 +1,68 @@
+{
+  "flow_id": "solicitud",
+  "command": "/solicitud",
+  "title": "Solicitud de Mejora",
+  "steps": [
+    {
+      "id": "step_business",
+      "question": "🏪 ¿Cuál es el nombre del negocio?\n*Ej:* Supermercado El Sol",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_apk"
+    },
+    {
+      "id": "step_apk",
+      "question": "📱 ¿Cuál es la aplicación o módulo?",
+      "validation": {
+        "type": "options",
+        "choices": []
+      },
+      "optional": false,
+      "keyboard": {
+        "enabled": true,
+        "layout": "column",
+        "buttons": []
+      },
+      "next_step": "step_priority"
+    },
+    {
+      "id": "step_priority",
+      "question": "⚠️ ¿Cuál es la prioridad?",
+      "validation": {
+        "type": "options",
+        "choices": []
+      },
+      "optional": false,
+      "keyboard": {
+        "enabled": true,
+        "layout": "column",
+        "buttons": []
+      },
+      "next_step": "step_implementation"
+    },
+    {
+      "id": "step_implementation",
+      "question": "💡 ¿Qué se quiere implementar o mejorar?\n*Ej:* Agregar opción para exportar reportes en PDF",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_usage_example"
+    },
+    {
+      "id": "step_usage_example",
+      "question": "📚 ¿Cómo se usaría? Describe el flujo o ejemplo de uso.\n*Ej:* Usuario entra a reportes, hace clic en 'Exportar PDF', recibe archivo",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": null
+    }
+  ],
+  "summary_template": "solicitud"
+}

@@ -140,7 +140,9 @@ def format_summary(flow: FlowDefinition, state: UserState, user: User) -> str:
     if template == "daily":
         return format_daily_summary(state.answers, user)
     if template == "incidencia":
-        return format_incidencia_summary(state.answers, state.media_file_ids, user)
+        return _format_incidencia_detail_summary(state.answers, state.media_file_ids, user)
+    if template == "solicitud":
+        return _format_solicitud_summary(state.answers, user)
     # Generic fallback for any future flow
     return _format_generic(flow, state, user)
 

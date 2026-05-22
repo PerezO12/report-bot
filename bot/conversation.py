@@ -19,11 +19,31 @@ from .formatter import format_summary
 from .state_store import StateStore
 from .validator import normalize_answer, run_validation
 
+# Importar functions de database
+import aiosqlite
+
 logger = logging.getLogger(__name__)
 
 
 def build_states_map(flow: FlowDefinition) -> dict[str, int]:
     return {step.id: idx for idx, step in enumerate(flow.steps)}
+
+
+async def _load_dynamic_options(step_id: str, db: aiosqlite.Connection | None) -> list[str]:
+    """Load dynamic options from database based on step ID."""
+    if not db:
+        return []
+
+    from bot.database import get_apks, get_modules, get_priorities
+
+    if "apk" in step_id.lower():
+        return await get_apks(db)
+    elif "module" in step_id.lower():
+        return await get_modules(db)
+    elif "priority" in step_id.lower():
+        return await get_priorities(db)
+
+    return []
 
 
 def _make_date_keyboard() -> InlineKeyboardMarkup:
@@ -94,7 +114,24 @@ async def _send_question(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
     step_def: StepDefinition,
+    db: aiosqlite.Connection | None = None,
 ) -> None:
+    # Get db from context if not provided
+    if not db and context and context.user_data:
+        db = context.user_data.get("db")
+
+    # Para steps con opciones dinámicas, cargar de la DB
+    if step_def.validation.type == "options" and ("apk" in step_def.id or "module" in step_def.id or "priority" in step_def.id):
+        dynamic_options = await _load_dynamic_options(step_def.id, db)
+        if dynamic_options:
+            # Actualizar temporarily las opciones
+            if not step_def.keyboard:
+                step_def.keyboard = type('obj', (object,), {'enabled': True, 'layout': 'column', 'buttons': []})()
+            step_def.keyboard.buttons = [
+                type('obj', (object,), {'label': opt, 'value': opt.lower().replace(" ", "_")})()
+                for opt in dynamic_options
+            ]
+
     keyboard = _make_keyboard(step_def)
     msg = update.effective_message
     question_text = step_def.question + _get_hint(step_def)
@@ -679,9 +716,14 @@ def build_conversation_handler(
     states_map = build_states_map(flow)
     command = flow.command.lstrip("/")
 
+    # Store db in a way that's accessible to nested functions
+    _handler_context = {"db": db}
+
     async def start_flow(
         update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> int:
+        # Store db in context for access in nested functions
+        context.user_data["db"] = db
         return await _start_flow_common(
             update, context, flow, store, states_map, from_callback=False, db=db
         )
