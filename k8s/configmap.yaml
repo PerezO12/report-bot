@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: botdaily-config
-  namespace: botdaily
-data:
-  USE_PROXY: "false"
-  PROXY_URL: "http://proxy.server:3128"

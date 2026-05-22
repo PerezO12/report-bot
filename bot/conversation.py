@@ -32,16 +32,26 @@ def build_states_map(flow: FlowDefinition) -> dict[str, int]:
 async def _load_dynamic_options(step_id: str, db: aiosqlite.Connection | None) -> list[str]:
     """Load dynamic options from database based on step ID."""
     if not db:
+        logger.warning(f"DB is None for step {step_id}")
         return []
 
-    from bot.database import get_apks, get_modules, get_priorities
+    try:
+        from bot.database import get_apks, get_modules, get_priorities
 
-    if "apk" in step_id.lower():
-        return await get_apks(db)
-    elif "module" in step_id.lower():
-        return await get_modules(db)
-    elif "priority" in step_id.lower():
-        return await get_priorities(db)
+        if "apk" in step_id.lower():
+            options = await get_apks(db)
+            logger.info(f"Loaded {len(options)} APKs for {step_id}")
+            return options
+        elif "module" in step_id.lower():
+            options = await get_modules(db)
+            logger.info(f"Loaded {len(options)} modules for {step_id}")
+            return options
+        elif "priority" in step_id.lower():
+            options = await get_priorities(db)
+            logger.info(f"Loaded {len(options)} priorities for {step_id}")
+            return options
+    except Exception as e:
+        logger.error(f"Error loading dynamic options for {step_id}: {e}")
 
     return []
 
@@ -97,9 +107,9 @@ def _get_hint(step_def: StepDefinition) -> str:
     """Generate auto hint based on validation type."""
     vtype = step_def.validation.type
     if vtype == "date_selector":
-        return "\n👆 _Selecciona la fecha_"
+        return "\n👇 _Selecciona la fecha_"
     if vtype in ("boolean", "options"):
-        return "\n👆 _Selecciona una opción_"
+        return "\n👇 _Selecciona tu respuesta_"
     if vtype == "media":
         return "\n📎 _Envía una foto o vídeo_"
     if vtype == "number":
@@ -115,7 +125,17 @@ async def _send_question(
     context: ContextTypes.DEFAULT_TYPE,
     step_def: StepDefinition,
     db: aiosqlite.Connection | None = None,
+    chat_id: int | None = None,
 ) -> None:
+    """Send a question to the user. Can work in message or callback context.
+
+    Args:
+        update: The Update object
+        context: The context
+        step_def: The step definition
+        db: Database connection (optional)
+        chat_id: If provided, use context.bot.send_message instead of message.reply_text
+    """
     # Get db from context if not provided
     if not db and context and context.user_data:
         db = context.user_data.get("db")
@@ -124,22 +144,31 @@ async def _send_question(
     if step_def.validation.type == "options" and ("apk" in step_def.id or "module" in step_def.id or "priority" in step_def.id):
         dynamic_options = await _load_dynamic_options(step_def.id, db)
         if dynamic_options:
-            # Actualizar temporarily las opciones
-            if not step_def.keyboard:
-                step_def.keyboard = type('obj', (object,), {'enabled': True, 'layout': 'column', 'buttons': []})()
-            step_def.keyboard.buttons = [
-                type('obj', (object,), {'label': opt, 'value': opt.lower().replace(" ", "_")})()
-                for opt in dynamic_options
-            ]
+            logger.info(f"Loaded {len(dynamic_options)} options for {step_def.id}")
+            # Crear keyboard con opciones cargadas de la DB
+            from .flow_loader import KeyboardButton, KeyboardDef
+            buttons = [KeyboardButton(label=opt, value=opt) for opt in dynamic_options]
+            step_def.keyboard = KeyboardDef(enabled=True, layout="column", buttons=buttons)
 
     keyboard = _make_keyboard(step_def)
-    msg = update.effective_message
     question_text = step_def.question + _get_hint(step_def)
-    await msg.reply_text(
-        question_text,
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=keyboard,
-    )
+
+    if chat_id:
+        # Callback context: use context.bot.send_message
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=question_text,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=keyboard,
+        )
+    else:
+        # Message context: use update.effective_message.reply_text
+        msg = update.effective_message
+        await msg.reply_text(
+            question_text,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=keyboard,
+        )
 
 
 async def _finish_flow(
@@ -256,7 +285,7 @@ async def _handle_text_step(
             return await _finish_flow(update, context, flow, store, admin_chat_id, on_end, db)
 
         next_step = flow.steps_by_id[next_id]
-        await _send_question(update, context, next_step)
+        await _send_question(update, context, next_step, db)
         return states_map[next_id]
 
     except Exception:
@@ -308,12 +337,8 @@ async def _handle_callback_step(
             return await _finish_flow(update, context, flow, store, admin_chat_id, on_end, db)
 
         next_step = flow.steps_by_id[next_id]
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=next_step.question,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=_make_keyboard(next_step),
-        )
+        # Use _send_question to load dynamic options (apk, module, priority)
+        await _send_question(update, context, next_step, db, chat_id=update.effective_chat.id)
         return states_map[next_id]
 
     except Exception:
@@ -361,7 +386,7 @@ async def _handle_photo_step(
             return await _finish_flow(update, context, flow, store, admin_chat_id, on_end, db)
 
         next_step = flow.steps_by_id[next_id]
-        await _send_question(update, context, next_step)
+        await _send_question(update, context, next_step, db)
         return states_map[next_id]
 
     except Exception:
@@ -464,15 +489,10 @@ async def _handle_date_selector_step(
     next_id = get_next_step_id(step_def, state.answers)
 
     if next_id is None:
-        return await _finish_flow(update, context, flow, store, admin_chat_id, on_end)
+        return await _finish_flow(update, context, flow, store, admin_chat_id, on_end, db)
 
     next_step = flow.steps_by_id[next_id]
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=next_step.question + _get_hint(next_step),
-        parse_mode=ParseMode.MARKDOWN,
-        reply_markup=_make_keyboard(next_step),
-    )
+    await _send_question(update, context, next_step, db, chat_id=update.effective_chat.id)
     return states_map[next_id]
 
 
@@ -521,7 +541,7 @@ async def _handle_media_step(
             return await _finish_flow(update, context, flow, store, admin_chat_id, on_end, db)
 
         next_step = flow.steps_by_id[next_id]
-        await _send_question(update, context, next_step)
+        await _send_question(update, context, next_step, db)
         return states_map[next_id]
 
     except Exception:
@@ -682,6 +702,10 @@ async def _start_flow_common(
     first_step = flow.steps[0]
     store.init_session(user.id, flow.flow_id, first_step.id)
 
+    # Asegurar que db esté en context para funciones anidadas
+    if not context.user_data.get("db"):
+        context.user_data["db"] = db
+
     if from_callback:
         query = update.callback_query
         await query.answer()
@@ -689,19 +713,14 @@ async def _start_flow_common(
             f"📋 *{flow.title}*\nVamos paso a paso. Puedes cancelar en cualquier momento con /cancelar.\n",
             parse_mode=ParseMode.MARKDOWN,
         )
-        keyboard = _make_keyboard(first_step)
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=first_step.question + _get_hint(first_step),
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=keyboard,
-        )
+        # Usar _send_question para cargar opciones dinámicas
+        await _send_question(update, context, first_step, db)
     else:
         await update.message.reply_text(
             f"📋 *{flow.title}*\nVamos paso a paso. Puedes cancelar en cualquier momento con /cancelar.\n",
             parse_mode=ParseMode.MARKDOWN,
         )
-        await _send_question(update, context, first_step)
+        await _send_question(update, context, first_step, db)
 
     return states_map[first_step.id]
 

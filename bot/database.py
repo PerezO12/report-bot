@@ -126,6 +126,7 @@ async def _seed_initial_data(db: aiosqlite.Connection) -> None:
         "Turnos",
         "Usuarios",
         "Configuraciones",
+        "Otro",
     ]
     for module in modules:
         await db.execute(
@@ -140,6 +141,7 @@ async def _seed_initial_data(db: aiosqlite.Connection) -> None:
         ("Medio", 3),
         ("Alta", 4),
         ("Urgente", 5),
+        ("Extremadamente urgente", 6),
     ]
     for name, level in priorities:
         await db.execute(
