@@ -44,13 +44,18 @@ async def _init_app():
     admin_bot_token = _require_env("ADMIN_BOT_TOKEN")
     admin_user_ids_str = _require_env("ADMIN_USER_IDS")
 
-    # Parse comma-separated user IDs
-    admin_user_ids = [int(uid.strip()) for uid in admin_user_ids_str.split(",")]
-    logger.info("Authorized admin users: %s", admin_user_ids)
+    # Parse comma-separated user IDs from .env for initial seeding
+    initial_admin_ids = [int(uid.strip()) for uid in admin_user_ids_str.split(",")]
+    initial_admin_id = initial_admin_ids[0] if initial_admin_ids else None
 
-    # Initialize database
-    db = await init_db("botdaily.db")
+    # Initialize database (seed initial admin user if not exists)
+    db = await init_db("botdaily.db", admin_user_id=initial_admin_id)
     logger.info("Database initialized")
+
+    # Load authorized admin users from database
+    from bot.database import get_authorized_admins
+    admin_user_ids = await get_authorized_admins(db)
+    logger.info("Authorized admin users from DB: %s", admin_user_ids)
 
     # Build application
     app = ApplicationBuilder().token(admin_bot_token).build()

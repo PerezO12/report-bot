@@ -55,6 +55,7 @@ def _build_main_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("🚨 Incidencias", callback_data="menu:incidencias")],
         [InlineKeyboardButton("📝 Solicitudes", callback_data="menu:solicitudes")],
         [InlineKeyboardButton("📊 Dailies", callback_data="menu:dailies")],
+        [InlineKeyboardButton("⚙️ Administradores", callback_data="menu:admins")],
     ]
     return InlineKeyboardMarkup(buttons)
 
@@ -127,6 +128,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await _handle_solicitud(query, data[4:], db, context)
     elif data.startswith("daily:"):
         await _handle_daily(query, data[6:], db, context)
+    elif data.startswith("admin:"):
+        await _handle_admin(query, data[6:], db, context)
 
 
 async def _handle_menu(
@@ -149,6 +152,8 @@ async def _handle_menu(
         await _show_solicitudes_menu(query, db)
     elif submenu == "dailies":
         await _show_dailies_menu(query, db)
+    elif submenu == "admins":
+        await _show_admins_menu(query, db)
 
 
 # ============================================================================
@@ -194,26 +199,40 @@ async def _handle_apk(query, action: str, db: aiosqlite.Connection, context: Con
 async def _confirm_add_item(
     update: Update, context: ContextTypes.DEFAULT_TYPE, item_type: str, db: aiosqlite.Connection
 ) -> int:
-    """Confirm adding a new APK or module."""
-    name = update.message.text.strip()
+    """Confirm adding a new APK, module, or admin user."""
+    value = update.message.text.strip()
 
-    if not name:
-        await update.message.reply_text("❌ El nombre no puede estar vacío.")
+    if not value:
+        await update.message.reply_text("❌ El valor no puede estar vacío.")
         return STATE_WAITING_ITEM_NAME
 
     if item_type == "apk":
-        success = await add_apk(db, name)
+        success = await add_apk(db, value)
+        msg_type = "APK"
+    elif item_type == "module":
+        success = await add_module(db, value)
+        msg_type = "Módulo"
+    elif item_type == "admin":
+        try:
+            user_id = int(value)
+            from bot.database import add_authorized_admin
+            success = await add_authorized_admin(db, user_id)
+            msg_type = f"Administrador ({user_id})"
+        except ValueError:
+            await update.message.reply_text("❌ El User ID debe ser un número.")
+            return STATE_WAITING_ITEM_NAME
     else:
-        success = await add_module(db, name)
+        success = False
+        msg_type = "Item"
 
     if success:
         await update.message.reply_text(
-            f"✅ {item_type.capitalize()} '{name}' añadido correctamente.",
+            f"✅ {msg_type} añadido correctamente.",
             parse_mode=ParseMode.MARKDOWN,
         )
     else:
         await update.message.reply_text(
-            f"⚠️ El {item_type} '{name}' ya existe.",
+            f"⚠️ El {msg_type} ya existe o error al agregar.",
             parse_mode=ParseMode.MARKDOWN,
         )
 
@@ -562,6 +581,87 @@ async def _handle_daily(query, action: str, db: aiosqlite.Connection, context: C
             text = render_list(cards, "daily", 0, total, f"Dailies — {date_str}")
             buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="daily:filter:date")]]
 
+        await query.edit_message_text(
+            text,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup(buttons),
+        )
+
+
+# ============================================================================
+# Administradores (Authorized Admin Users)
+# ============================================================================
+
+async def _show_admins_menu(query, db: aiosqlite.Connection) -> None:
+    """Show admin management menu."""
+    buttons = [
+        [InlineKeyboardButton("👥 Ver Administradores", callback_data="admin:list")],
+        [InlineKeyboardButton("➕ Agregar Admin", callback_data="admin:add")],
+        [InlineKeyboardButton("🗑️ Remover Admin", callback_data="admin:remove")],
+        [InlineKeyboardButton("🔙 Volver", callback_data="menu:main")],
+    ]
+    await query.edit_message_text(
+        "*⚙️ Administradores*\n\nGestión de usuarios autorizados:",
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=InlineKeyboardMarkup(buttons),
+    )
+
+
+async def _handle_admin(query, action: str, db: aiosqlite.Connection, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle admin user management."""
+    from bot.database import get_authorized_admins
+
+    if action == "list":
+        admin_ids = await get_authorized_admins(db)
+        text = "*⚙️ Administradores Autorizados*\n\n"
+        if not admin_ids:
+            text += "_No hay administradores._"
+        else:
+            text += "\n".join(f"• `{uid}`" for uid in admin_ids)
+        text += f"\n\n_Total: {len(admin_ids)}_"
+
+        buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="menu:admins")]]
+        await query.edit_message_text(
+            text,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup(buttons),
+        )
+
+    elif action == "add":
+        await query.edit_message_text(
+            "*➕ Agregar Administrador*\n\nEscribe el User ID del nuevo administrador:\n`/cancelar` para volver",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        context.user_data["pending_add"] = "admin"
+
+    elif action == "remove":
+        admin_ids = await get_authorized_admins(db)
+        if not admin_ids:
+            await query.answer("No hay administradores para remover", show_alert=True)
+            return
+
+        buttons = [[InlineKeyboardButton(f"❌ {uid}", callback_data=f"admin:confirm_remove:{uid}")] for uid in admin_ids]
+        buttons.append([InlineKeyboardButton("🔙 Volver", callback_data="menu:admins")])
+
+        await query.edit_message_text(
+            "*🗑️ Remover Administrador*\n\nSelecciona quién remover:",
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=InlineKeyboardMarkup(buttons),
+        )
+
+    elif action.startswith("confirm_remove:"):
+        user_id_str = action.split(":")[2]
+        user_id = int(user_id_str)
+
+        from bot.database import remove_authorized_admin
+        success = await remove_authorized_admin(db, user_id)
+
+        if success:
+            text = f"✅ Administrador `{user_id}` removido correctamente."
+        else:
+            text = f"⚠️ No se pudo remover administrador `{user_id}`."
+
+        buttons = [[InlineKeyboardButton("🔙 Volver", callback_data="menu:admins")]]
         await query.edit_message_text(
             text,
             parse_mode=ParseMode.MARKDOWN,

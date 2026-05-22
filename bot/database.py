@@ -7,7 +7,7 @@ import aiosqlite
 logger = logging.getLogger(__name__)
 
 
-async def init_db(path: str) -> aiosqlite.Connection:
+async def init_db(path: str, admin_user_id: int | None = None) -> aiosqlite.Connection:
     db = await aiosqlite.connect(path)
 
     # Reports tables
@@ -75,17 +75,28 @@ async def init_db(path: str) -> aiosqlite.Connection:
         """
     )
 
+    # Admin users table
+    await db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS authorized_admins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER UNIQUE NOT NULL,
+            added_at TEXT NOT NULL
+        )
+        """
+    )
+
     await db.commit()
 
     # Seed initial data
-    await _seed_initial_data(db)
+    await _seed_initial_data(db, admin_user_id)
 
     logger.info("Database initialized: %s", path)
     return db
 
 
-async def _seed_initial_data(db: aiosqlite.Connection) -> None:
-    """Seed APKs, modules, and priorities if they don't exist."""
+async def _seed_initial_data(db: aiosqlite.Connection, admin_user_id: int | None = None) -> None:
+    """Seed APKs, modules, priorities, and initial admin user if they don't exist."""
 
     # APKs
     apks = [
@@ -148,6 +159,15 @@ async def _seed_initial_data(db: aiosqlite.Connection) -> None:
             "INSERT OR IGNORE INTO priorities (name, level) VALUES (?, ?)",
             (name, level)
         )
+
+    # Seed initial admin user if provided
+    if admin_user_id:
+        now = datetime.utcnow().isoformat()
+        await db.execute(
+            "INSERT OR IGNORE INTO authorized_admins (user_id, added_at) VALUES (?, ?)",
+            (admin_user_id, now)
+        )
+        logger.info(f"Initial admin user seeded: {admin_user_id}")
 
     await db.commit()
     logger.info("Initial data seeded successfully")
@@ -455,3 +475,36 @@ async def count_daily_reports(
         count += 1
 
     return count
+
+
+async def get_authorized_admins(db: aiosqlite.Connection) -> list[int]:
+    """Get all authorized admin user IDs."""
+    async with db.execute("SELECT user_id FROM authorized_admins ORDER BY added_at") as cursor:
+        rows = await cursor.fetchall()
+    return [row[0] for row in rows]
+
+
+async def add_authorized_admin(db: aiosqlite.Connection, user_id: int) -> bool:
+    """Add a new authorized admin user. Returns True if added, False if already exists."""
+    try:
+        now = datetime.utcnow().isoformat()
+        await db.execute(
+            "INSERT INTO authorized_admins (user_id, added_at) VALUES (?, ?)",
+            (user_id, now)
+        )
+        await db.commit()
+        logger.info(f"Admin user added: {user_id}")
+        return True
+    except Exception as e:
+        logger.warning(f"Admin user {user_id} already exists or error: {e}")
+        return False
+
+
+async def remove_authorized_admin(db: aiosqlite.Connection, user_id: int) -> bool:
+    """Remove an authorized admin user. Returns True if removed, False if not found."""
+    async with db.execute("DELETE FROM authorized_admins WHERE user_id = ?", (user_id,)) as cursor:
+        if cursor.rowcount > 0:
+            await db.commit()
+            logger.info(f"Admin user removed: {user_id}")
+            return True
+    return False
