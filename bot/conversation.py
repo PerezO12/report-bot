@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta
 from functools import partial
 from typing import Any
 
@@ -25,7 +26,37 @@ def build_states_map(flow: FlowDefinition) -> dict[str, int]:
     return {step.id: idx for idx, step in enumerate(flow.steps)}
 
 
+def _make_date_keyboard() -> InlineKeyboardMarkup:
+    """Generate date selector keyboard (today + last 7 days)."""
+    today = datetime.utcnow().date()
+    buttons = []
+
+    # Button 0: Today
+    today_str = today.strftime("%d/%m")
+    buttons.append([InlineKeyboardButton(
+        f"📅 Hoy — {today_str}",
+        callback_data=today.isoformat()
+    )])
+
+    # Buttons 1-7: Last 7 days
+    day_labels = ["Ayer", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+    for i in range(1, 8):
+        past_date = today - timedelta(days=i)
+        date_str = past_date.strftime("%d/%m")
+        day_label = day_labels[i - 1]
+        buttons.append([InlineKeyboardButton(
+            f"{day_label} {date_str}",
+            callback_data=past_date.isoformat()
+        )])
+
+    return InlineKeyboardMarkup(buttons)
+
+
 def _make_keyboard(step_def: StepDefinition) -> InlineKeyboardMarkup | None:
+    # Handle date_selector specially
+    if step_def.validation.type == "date_selector":
+        return _make_date_keyboard()
+
     if not step_def.keyboard or not step_def.keyboard.enabled:
         return None
     if step_def.keyboard.layout == "row":

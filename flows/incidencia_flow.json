@@ -1,7 +1,7 @@
 {
   "flow_id": "incidencia",
   "command": "/incidencia",
-  "title": "Reporte de Incidencia",
+  "title": "Reporte de Incidencia o Solicitud",
   "steps": [
     {
       "id": "step_type",
@@ -19,7 +19,15 @@
           {"label": "📝 Solicitud", "value": "solicitud"}
         ]
       },
-      "next_step": "step_region"
+      "next_step": {
+        "type": "conditional",
+        "on": "step_type",
+        "cases": {
+          "incidencia": "step_region",
+          "solicitud": "step_business_request"
+        },
+        "default": null
+      }
     },
     {
       "id": "step_region",
@@ -40,10 +48,10 @@
           {"label": "Región 4", "value": "region_4"}
         ]
       },
-      "next_step": "step_business"
+      "next_step": "step_business_incident"
     },
     {
-      "id": "step_business",
+      "id": "step_business_incident",
       "question": "🏪 ¿Cuál es el nombre del negocio?\n*Ej:* Supermercado El Sol",
       "validation": {
         "type": "text"
@@ -95,6 +103,55 @@
       "question": "📎 Envía fotos y/o vídeos como evidencia del problema.\n_Este paso es obligatorio._",
       "validation": {
         "type": "media"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": null
+    },
+    {
+      "id": "step_business_request",
+      "question": "🏪 ¿Cuál es el nombre del negocio?\n*Ej:* Supermercado El Sol",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_apk"
+    },
+    {
+      "id": "step_apk",
+      "question": "📱 ¿Cuál es la aplicación o módulo?",
+      "validation": {
+        "type": "options",
+        "choices": ["Administración", "APK Gestión", "APK Punto de Venta"]
+      },
+      "optional": false,
+      "keyboard": {
+        "enabled": true,
+        "layout": "column",
+        "buttons": [
+          {"label": "💼 Administración", "value": "administracion"},
+          {"label": "📊 APK Gestión", "value": "apk_gestion"},
+          {"label": "🛒 APK Punto de Venta", "value": "apk_pv"}
+        ]
+      },
+      "next_step": "step_implementation"
+    },
+    {
+      "id": "step_implementation",
+      "question": "💡 ¿Qué se quiere implementar o mejorar?\n*Ej:* Agregar opción para exportar reportes en PDF",
+      "validation": {
+        "type": "text"
+      },
+      "optional": false,
+      "keyboard": null,
+      "next_step": "step_usage_example"
+    },
+    {
+      "id": "step_usage_example",
+      "question": "📚 ¿Cómo se usaría? Describe el flujo o ejemplo de uso.\n*Ej:* Usuario entra a reportes, hace clic en 'Exportar PDF', recibe archivo",
+      "validation": {
+        "type": "text"
       },
       "optional": false,
       "keyboard": null,
